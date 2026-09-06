@@ -25,17 +25,19 @@ architecture a_CONT_16 of CONT_16 is
 				Q_aux <= (others => '0');
 			
 			elsif rising_edge(CLK) then
-			
-				if CLR = '1' then                 -- limpar tudo
-					Q_aux <= (others => '0');
 					
-				elsif EN = '1' then
+				if EN = '1' then
 					
 					--if LOAD = '1' then
 						--Q_aux <= unsigned(DATA);
 						
 					--else
+					
+					if CLR = '1' then                 -- limpar tudo
+						Q_aux <= (others => '0');
+					else
 						Q_aux <= Q_aux + 1;
+					end if;
 						
 					--end if;
 					
