@@ -58,4 +58,73 @@ set_global_assignment -name VHDL_FILE CRONOMETRO_tb.vhd
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name VHDL_FILE DIVISOR_10ms.vhd
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+
+# ==============================================================================
+# Clock Principal (50 MHz)
+# ==============================================================================
+set_location_assignment PIN_N2 -to CLK
+
+# ==============================================================================
+# Displays de 7 Segmentos (HEX0 a HEX3)
+# ==============================================================================
+# HEX0: Unidades dos Centésimos
+set_location_assignment PIN_AF10 -to CENTESIMOS_UNIDADE_7SEG[0]
+set_location_assignment PIN_AB12 -to CENTESIMOS_UNIDADE_7SEG[1]
+set_location_assignment PIN_AC12 -to CENTESIMOS_UNIDADE_7SEG[2]
+set_location_assignment PIN_AD11 -to CENTESIMOS_UNIDADE_7SEG[3]
+set_location_assignment PIN_AE11 -to CENTESIMOS_UNIDADE_7SEG[4]
+set_location_assignment PIN_V14 -to CENTESIMOS_UNIDADE_7SEG[5]
+set_location_assignment PIN_V13 -to CENTESIMOS_UNIDADE_7SEG[6]
+
+# HEX1: Dezenas dos Centésimos
+set_location_assignment PIN_V20 -to CENTESIMOS_DEZENA_7SEG[0]
+set_location_assignment PIN_V21 -to CENTESIMOS_DEZENA_7SEG[1]
+set_location_assignment PIN_W21 -to CENTESIMOS_DEZENA_7SEG[2]
+set_location_assignment PIN_Y22 -to CENTESIMOS_DEZENA_7SEG[3]
+set_location_assignment PIN_AA24 -to CENTESIMOS_DEZENA_7SEG[4]
+set_location_assignment PIN_AA23 -to CENTESIMOS_DEZENA_7SEG[5]
+set_location_assignment PIN_AB24 -to CENTESIMOS_DEZENA_7SEG[6]
+
+# HEX2: Unidades dos Segundos
+set_location_assignment PIN_AB23 -to SEGUNDOS_UNIDADE_7SEG[0]
+set_location_assignment PIN_V22 -to SEGUNDOS_UNIDADE_7SEG[1]
+set_location_assignment PIN_AC25 -to SEGUNDOS_UNIDADE_7SEG[2]
+set_location_assignment PIN_AC26 -to SEGUNDOS_UNIDADE_7SEG[3]
+set_location_assignment PIN_AB26 -to SEGUNDOS_UNIDADE_7SEG[4]
+set_location_assignment PIN_AB25 -to SEGUNDOS_UNIDADE_7SEG[5]
+set_location_assignment PIN_Y24 -to SEGUNDOS_UNIDADE_7SEG[6]
+
+# HEX3: Dezenas dos Segundos
+set_location_assignment PIN_Y23 -to SEGUNDOS_DEZENA_7SEG[0]
+set_location_assignment PIN_AA25 -to SEGUNDOS_DEZENA_7SEG[1]
+set_location_assignment PIN_AA26 -to SEGUNDOS_DEZENA_7SEG[2]
+set_location_assignment PIN_Y26 -to SEGUNDOS_DEZENA_7SEG[3]
+set_location_assignment PIN_Y25 -to SEGUNDOS_DEZENA_7SEG[4]
+set_location_assignment PIN_U22 -to SEGUNDOS_DEZENA_7SEG[5]
+set_location_assignment PIN_W24 -to SEGUNDOS_DEZENA_7SEG[6]
+
+# ==============================================================================
+# LEDs Vermelhos (LEDR0 a LEDR15)
+# ==============================================================================
+# Centésimos: LEDR[0..7]
+set_location_assignment PIN_AE23 -to CENTESIMOS[0]
+set_location_assignment PIN_AF23 -to CENTESIMOS[1]
+set_location_assignment PIN_AB21 -to CENTESIMOS[2]
+set_location_assignment PIN_AC22 -to CENTESIMOS[3]
+set_location_assignment PIN_AD22 -to CENTESIMOS[4]
+set_location_assignment PIN_AD23 -to CENTESIMOS[5]
+set_location_assignment PIN_AD21 -to CENTESIMOS[6]
+set_location_assignment PIN_AC21 -to CENTESIMOS[7]
+
+# Segundos: LEDR[8..15]
+set_location_assignment PIN_AA14 -to SEGUNDOS[0]
+set_location_assignment PIN_Y13 -to SEGUNDOS[1]
+set_location_assignment PIN_AA13 -to SEGUNDOS[2]
+set_location_assignment PIN_AC14 -to SEGUNDOS[3]
+set_location_assignment PIN_AD15 -to SEGUNDOS[4]
+set_location_assignment PIN_AE15 -to SEGUNDOS[5]
+set_location_assignment PIN_AF13 -to SEGUNDOS[6]
+set_location_assignment PIN_AE13 -to SEGUNDOS[7]
+
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
