@@ -17,11 +17,11 @@ vsim -voptargs=+acc work.CRONOMETRO_tb
 
 #Adiciona os sinais na janela Wave
 add wave -radix binary /CRONOMETRO_tb/clk
-add wave -radix hexadecimal /CRONOMETRO_tb/s
-add wave -radix hexadecimal /CRONOMETRO_tb/c
+add wave -radix hexadecimal /CRONOMETRO_tb/segundos
+add wave -radix hexadecimal /CRONOMETRO_tb/centesimos
 add wave -radix binary /CRONOMETRO_tb/en
-add wave -radix binary /CRONOMETRO_tb/bot_p
-add wave -radix binary /CRONOMETRO_tb/bot_r
+add wave -radix binary /CRONOMETRO_tb/bot_pausar
+add wave -radix binary /CRONOMETRO_tb/bot_resetar
 
 #Executa a simulação
 run 3000 ns

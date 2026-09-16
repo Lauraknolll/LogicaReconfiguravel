@@ -11,7 +11,7 @@ end entity;
 
 architecture a_DIVISOR_10ms of DIVISOR_10ms is
 
-	signal contador : integer range 0 to 499_999 := 0;
+	signal contador : integer range 0 to 9 := 0;
 	
 	begin
 	
@@ -20,7 +20,7 @@ architecture a_DIVISOR_10ms of DIVISOR_10ms is
 		
 		if rising_edge(CLK_50MHz) then
 		
-			if contador = 499_999 then
+			if contador = 9 then
 				contador <= 0;
 				CLK_10ms <= '1';
 				
