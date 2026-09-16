@@ -19,6 +19,9 @@ vsim -voptargs=+acc work.CRONOMETRO_tb
 add wave -radix binary /CRONOMETRO_tb/clk
 add wave -radix hexadecimal /CRONOMETRO_tb/s
 add wave -radix hexadecimal /CRONOMETRO_tb/c
+add wave -radix binary /CRONOMETRO_tb/en
+add wave -radix binary /CRONOMETRO_tb/bot_p
+add wave -radix binary /CRONOMETRO_tb/bot_r
 
 #Executa a simulação
 run 3000 ns
