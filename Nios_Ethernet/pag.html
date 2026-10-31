@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML_NIOS</title>
+</head>
+
+<body>
+    <main>
+
+        <section id="digitar_IP">
+            <label for="campo_ip">Digite o IP do NIOS: </label>
+            <input type="text" id="ip" value="192.168." size="20">
+        </section>
+        <section id="digitar_mensagem">
+            <!--Criando a caixa de mensagem, com limite para 100 caracteres-->
+            <label for="mensagem">Mensagem para enviar:</label>
+            <input type="text" id="mensagem" maxlength="100" size="130">
+            <!--Criando o botão-->
+            <button type="b_enviarmensagem" onclick="enviar()">Enviar</button>
+        </section>
+        <!--Caixinha da resposta-->
+        <section id="caixa_resposta">
+            <label for="resposta">Mensagem recebida da placa:</label>
+            <input type="text" id="resposta" size="130" readonly>
+        </section>
+
+        <script src="script.js">
+        </script>
+    </main>
+</body>
+
+</html>
