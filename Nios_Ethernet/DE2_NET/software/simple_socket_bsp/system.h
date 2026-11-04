@@ -2,7 +2,7 @@
  * system.h - SOPC Builder system and BSP software package information
  *
  * Machine generated for CPU 'cpu_0' in SOPC Builder design 'system_0'
- * SOPC Builder design path: J:/Altera/13.0sp1/projects/DE2_CD/DE2_demonstrations_Qsys/DE2_NET/system_0.sopcinfo
+ * SOPC Builder design path: C:/altera/Projetos/LogicaReconfiguravel/Nios_Ethernet/DE2_NET/system_0.sopcinfo
  *
  * Generated: Thu Jul 05 22:54:04 BRT 2018
  */

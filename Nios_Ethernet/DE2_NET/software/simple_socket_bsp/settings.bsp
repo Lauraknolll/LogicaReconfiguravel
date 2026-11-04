@@ -4,9 +4,9 @@
         <BspVersion>default</BspVersion>
         <BspGeneratedTimeStamp>05/07/2018 22:54:03</BspGeneratedTimeStamp>
         <BspGeneratedUnixTimeStamp>1530842043013</BspGeneratedUnixTimeStamp>
-        <BspGeneratedLocation>J:\Altera\13.0sp1\projects\DE2_CD\DE2_demonstrations_Qsys\DE2_NET\software\simple_socket_bsp</BspGeneratedLocation>
+        <BspGeneratedLocation>C:\altera\Projetos\LogicaReconfiguravel\Nios_Ethernet\DE2_NET\software\simple_socket_bsp</BspGeneratedLocation>
         <BspSettingsFile>.\settings.bsp</BspSettingsFile>
-        <SopcDesignFile>J:\Altera\13.0sp1\projects\DE2_CD\DE2_demonstrations_Qsys\DE2_NET\system_0.sopcinfo</SopcDesignFile>
+        <SopcDesignFile>C:\altera\Projetos\LogicaReconfiguravel\Nios_Ethernet\DE2_NET\system_0.sopcinfo</SopcDesignFile>
         <JdiFile>default</JdiFile>
         <Cpu>cpu_0</Cpu>
         <SchemaVersion>1.9</SchemaVersion>

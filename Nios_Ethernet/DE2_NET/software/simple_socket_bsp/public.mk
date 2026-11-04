@@ -87,11 +87,11 @@ ACDS_VERSION := 13.0sp1
 
 # Quartus Generated JDI File. Required for resolving node instance ID's with 
 # design component names. 
-JDI_FILE := J:/Altera/13.0sp1/projects/DE2_CD/DE2_demonstrations_Qsys/DE2_NET/DE2_NET.jdi
+JDI_FILE := C:/altera/Projetos/LogicaReconfiguravel/Nios_Ethernet/DE2_NET/DE2_NET.jdi
 
 # Qsys--generated SOPCINFO file. Required for resolving node instance ID's with 
 # design component names. 
-SOPCINFO_FILE := J:/Altera/13.0sp1/projects/DE2_CD/DE2_demonstrations_Qsys/DE2_NET/system_0.sopcinfo
+SOPCINFO_FILE := C:/altera/Projetos/LogicaReconfiguravel/Nios_Ethernet/DE2_NET/system_0.sopcinfo
 
 # Big-Endian operation. 
 # setting BIG_ENDIAN is false

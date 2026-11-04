@@ -31,49 +31,49 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
   8 .debug_pubnames 000055ca  00000000  00000000  00050b98  2**0
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_info   0007e489  00000000  00000000  00056162  2**0
+  9 .debug_info   0007e261  00000000  00000000  00056162  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_abbrev 000125ac  00000000  00000000  000d45eb  2**0
+ 10 .debug_abbrev 000125ac  00000000  00000000  000d43c3  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_line   000421bc  00000000  00000000  000e6b97  2**0
+ 11 .debug_line   000421bc  00000000  00000000  000e696f  2**0
                   CONTENTS, READONLY, DEBUGGING
- 12 .debug_frame  0000673c  00000000  00000000  00128d54  2**2
+ 12 .debug_frame  0000673c  00000000  00000000  00128b2c  2**2
                   CONTENTS, READONLY, DEBUGGING
- 13 .debug_str    00003622  00000000  00000000  0012f490  2**0
+ 13 .debug_str    00003622  00000000  00000000  0012f268  2**0
                   CONTENTS, READONLY, DEBUGGING
- 14 .debug_loc    00013df9  00000000  00000000  00132ab2  2**0
+ 14 .debug_loc    00013df9  00000000  00000000  0013288a  2**0
                   CONTENTS, READONLY, DEBUGGING
- 15 .debug_alt_sim_info 00000050  00000000  00000000  001468ac  2**2
+ 15 .debug_alt_sim_info 00000050  00000000  00000000  00146684  2**2
                   CONTENTS, READONLY, DEBUGGING
- 16 .debug_ranges 000009a0  00000000  00000000  00146900  2**3
+ 16 .debug_ranges 000009a0  00000000  00000000  001466d8  2**3
                   CONTENTS, READONLY, DEBUGGING
- 17 .thread_model 00000006  00000000  00000000  001519fe  2**0
+ 17 .thread_model 00000006  00000000  00000000  001517d6  2**0
                   CONTENTS, READONLY
- 18 .cpu          00000005  00000000  00000000  00151a04  2**0
+ 18 .cpu          00000005  00000000  00000000  001517dc  2**0
                   CONTENTS, READONLY
- 19 .qsys         00000001  00000000  00000000  00151a09  2**0
+ 19 .qsys         00000001  00000000  00000000  001517e1  2**0
                   CONTENTS, READONLY
- 20 .simulation_enabled 00000001  00000000  00000000  00151a0a  2**0
+ 20 .simulation_enabled 00000001  00000000  00000000  001517e2  2**0
                   CONTENTS, READONLY
- 21 .sysid_hash   00000004  00000000  00000000  00151a0b  2**0
+ 21 .sysid_hash   00000004  00000000  00000000  001517e3  2**0
                   CONTENTS, READONLY
- 22 .sysid_base   00000004  00000000  00000000  00151a0f  2**0
+ 22 .sysid_base   00000004  00000000  00000000  001517e7  2**0
                   CONTENTS, READONLY
- 23 .sysid_time   00000004  00000000  00000000  00151a13  2**0
+ 23 .sysid_time   00000004  00000000  00000000  001517eb  2**0
                   CONTENTS, READONLY
- 24 .stderr_dev   0000000b  00000000  00000000  00151a17  2**0
+ 24 .stderr_dev   0000000b  00000000  00000000  001517ef  2**0
                   CONTENTS, READONLY
- 25 .stdin_dev    0000000b  00000000  00000000  00151a22  2**0
+ 25 .stdin_dev    0000000b  00000000  00000000  001517fa  2**0
                   CONTENTS, READONLY
- 26 .stdout_dev   0000000b  00000000  00000000  00151a2d  2**0
+ 26 .stdout_dev   0000000b  00000000  00000000  00151805  2**0
                   CONTENTS, READONLY
- 27 .sopc_system_name 00000008  00000000  00000000  00151a38  2**0
+ 27 .sopc_system_name 00000008  00000000  00000000  00151810  2**0
                   CONTENTS, READONLY
- 28 .quartus_project_dir 00000041  00000000  00000000  00151a40  2**0
+ 28 .quartus_project_dir 0000003d  00000000  00000000  00151818  2**0
                   CONTENTS, READONLY
- 29 .jdi          00004c3e  00000000  00000000  00151a81  2**0
+ 29 .jdi          00004c3e  00000000  00000000  00151855  2**0
                   CONTENTS, READONLY
- 30 .sopcinfo     000a9a68  00000000  00000000  001566bf  2**0
+ 30 .sopcinfo     000a9a68  00000000  00000000  00156493  2**0
                   CONTENTS, READONLY
 SYMBOL TABLE:
 01400000 l    d  .entry	00000000 .entry
@@ -5099,10 +5099,10 @@ void SSSInitialTask(void *task_data)
   sa.sin_family = AF_INET;
   80238c:	00800084 	movi	r2,2
   802390:	e0be020d 	sth	r2,-2040(fp)
-  sa.sin_port = htons(7777);
+  sa.sin_port = htons(7777); // ALTERAR PORTA A SER UTILIZADA AQUI
   802394:	00984784 	movi	r2,24862
   802398:	e0be028d 	sth	r2,-2038(fp)
-  res = inet_pton(AF_INET, "192.168.1.110", &sa.sin_addr);
+  res = inet_pton(AF_INET, "192.168.1.110", &sa.sin_addr); //ALTERAR O IP DO SERVIDOR AQUI
   80239c:	e0be0204 	addi	r2,fp,-2040
   8023a0:	11800104 	addi	r6,r2,4
   8023a4:	01000084 	movi	r4,2

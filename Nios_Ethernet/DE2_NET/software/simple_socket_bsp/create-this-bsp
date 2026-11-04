@@ -5,7 +5,7 @@
 BSP_TYPE=ucosii
 BSP_DIR=.
 SOPC_DIR=../../
-SOPC_FILE=J:/Altera/13.0sp1/projects/DE2_CD/DE2_demonstrations_Qsys/DE2_NET/system_0.sopcinfo
+SOPC_FILE=C:/altera/Projetos/LogicaReconfiguravel/Nios_Ethernet/DE2_NET/system_0.sopcinfo
 NIOS2_BSP_ARGS="--set hal.make.bsp_cflags_defined_symbols -DTSE_MY_SYSTEM --cmd enable_sw_package altera_iniche"
 CPU_NAME=
 
