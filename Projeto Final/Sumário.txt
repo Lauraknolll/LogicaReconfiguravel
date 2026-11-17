@@ -10,7 +10,7 @@ Em resumo, devo ser capaz de baixar o material e ter uma visão geral do projeto
 Se for muito grande, incluir no README.TXT o link para o local de armazenamento.
 
 
-PROJTO FINAL: Sistema de Radar e Painel de Mnesagens Variavies(PMV)
+PROJETO FINAL: Sistema de Radar e Painel de Mensagens Variavies(PMV)
 
 ESTADO ATUAL DO PROJETO:
 
@@ -19,16 +19,16 @@ Atualmente o projeto encontra-se na fase de especificação da arquitetura e des
 
 Descrição do Objetivo:
 
-O objetivo do projeto é implementar um sisema embarcado em um FPGA capaz de  simular operações de um Radar de transito de Mensagens Variavies.
+O objetivo do projeto é implementar um sistema embarcado em um FPGA capaz de  simular operações de um Radar de transito de Mensagens Variáveis.
 Esse projeto tem inspiração propria e não é baseado em nenhum dos projetos antigos, podendo servir como base para outras turmas futuras.
 
 
 Como Funciona?
 
-Um operador no computador host utiliza uma página web (HTML + JavaScrpit) para atuar no Centro de Controle de Tráfego para enviar dados de veículos
+Um operador no computador host utiliza uma página web (HTML + JavaScript) para atuar no Centro de Controle de Tráfego para enviar dados de veículos
 em um arquivo csv padronizado, contendo placa, velocidad e data/hora via requisições HTTP operando e se comunicando com a placa FPGA.
 
-Na placa, a Nios 2 recebe essas requisições, repessa os dados ao periférico (User.HW) feito em VHHL via o barramento da Avalon-MM para a classificação em hardware,
+Na placa, a Nios 2 recebe essas requisições, repessa os dados ao periférico (User.HW) feito em VHDL via o barramento da Avalon-MM para a classificação em hardware,
 que exibe o alerta no Display LCD e nos LEDS da Ciclone 10 e devolve o diagnóstico processado na resposta HTTP para exibição e geração de um outro relatório com as autuações.
 
 
@@ -36,11 +36,11 @@ Modulos do projeto
 
 
 
-- Modulo Do Host (Centro de Controle de Tráfego): Esse módulo consiste em uma página web local(.html) que vai executar diretamente no navegador do usuário, conectado na mesma rede DCHP da DE2
+- Modulo Do Host (Centro de Controle de Tráfego): Esse módulo consiste em uma página web local(.html) que vai executar diretamente no navegador do usuário, conectado na mesma rede DHCP da DE2
 
 Suas funcionalidades incluem:
 +Colocar um IP obtido pela placa via DHCP e configurar os parâmetros da via:
- -Esses parâmetros incluem limite de velocidade e final da placa para controle de rotatividade
+ -Esses parâmetros incluem limite de velocidade e final da placa para controle de rodízio
 +Leitura local de um arquivo de lote(.csv) utilizando a API File do navegador e envio sequencial assíncrono ára o servidor HTTTP no Nios
 +Envio unitário manual de veículos para teste
 +Exibição das autuações em tempo real retornadas pela FPGA  e geração de um relatório de saída em .csv
@@ -61,9 +61,9 @@ O firmware é executado sobre o RTOS MicroC/OS-II integrado a pilha do InterNich
 
 Seu sistema incluem sub módulos
 
-Inicialização da rede e DCHP: 
+Inicialização da rede e DHCP: 
 
-um arquivo .c do prorío simple socket nios inicia o driver que cuida da obtenção do endereço IP vai DCHP(o padrão do projeto simple socket)
+um arquivo .c do proprío simple socket nios inicia o driver que cuida da obtenção do endereço IP vai DCHP(o padrão do projeto simple socket)
 
 
 Thread de Recepção: 
