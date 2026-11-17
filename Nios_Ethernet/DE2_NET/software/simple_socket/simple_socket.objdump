@@ -5102,7 +5102,7 @@ void SSSInitialTask(void *task_data)
   sa.sin_port = htons(7777); // ALTERAR PORTA A SER UTILIZADA AQUI
   802394:	00984784 	movi	r2,24862
   802398:	e0be028d 	sth	r2,-2038(fp)
-  res = inet_pton(AF_INET, "192.168.1.110", &sa.sin_addr); //ALTERAR O IP DO SERVIDOR AQUI
+  res = inet_pton(AF_INET, "192.168.137.1", &sa.sin_addr); //ALTERAR O IP DO SERVIDOR AQUI
   80239c:	e0be0204 	addi	r2,fp,-2040
   8023a0:	11800104 	addi	r6,r2,4
   8023a4:	01000084 	movi	r4,2

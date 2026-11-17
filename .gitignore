@@ -4,6 +4,7 @@ incremental_db/
 output_files/
 simulation/
 work/
+Rascunhos/
 
 # Ignora arquivos temporários por extensão em QUALQUER nível
 *.bak

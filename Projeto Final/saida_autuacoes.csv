@@ -1,0 +1,6 @@
+placa;velocidade;limite;data_hora;status_vel;excesso_kmh;placa_restrita;horario_pico
+ABC1D23;54;60;12/11/2026 07:45:10;0;0;0;1
+XYZ9K88;68;60;12/11/2026 08:12:33;1;8;0;1
+BRA2E19;92;60;12/11/2026 14:20:05;2;32;1;0
+QWE4R59;58;60;12/11/2026 18:05:40;0;0;1;1
+JKL7M01;110;60;12/11/2026 23:50:12;2;50;0;0

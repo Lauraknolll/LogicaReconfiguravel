@@ -1,0 +1,14 @@
+Execução do tutorial NIOS com a inclusão de interface ETH e um USER HW específico. Esta tarefa deve ser executada no HW.
+ Itens a serem implementados:
+1) web server no NIOS, placa DE2 ou Cyclone 10.
+2)No PC deve ser implementado um cliente que transmita e receba dados da placa DE2/Cyclone 10
+3)O NIOS, na placa DE2/Cyclone 10 deve implementar o DHCP para obtenção do endereço IP.
+4)O PC e a placa DE2/Cyclone 10 devem ser conectados no mesmo servidor DHCP pré-existente.
+5)No NIOS devem existir, obrigatoriamente, duas threads, uma para recepção de pacotes e outra para transmissão.
+6)O cliente, no PC, deve possuir uma página HTML que permita a transmissão de uma string com número máximo de 100 caracteres. A página HTML pode estar localizada localmente no PC.
+7)O User_HW deve receber esta string e devolvê-la somando 1 (um) a cada caracter ASCII. Se o caracter ASCII for 0xF7, deve modificá-lo para 0 (zero).
+8)A placa deve transmitir esta string modificada para o PC. Este deve apresentá-la na página HTML.
+9) Os IPs devem ser obtidos, obrigatoriamente, por DHCP_ Tosos os itens acima são mandatórios.
+10)O Signal Tap deve ser incluído e mostrar pontos relevantes de funcionamento, como por exemplo:
+_ Chegada de um pacote Ethernet
+_ Transmissão de um pacote Ethernet, dentre outros. 

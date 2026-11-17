@@ -1,0 +1,96 @@
+Sumário contendo o estado atual do projeto
+
+Devem ser entregues um relatório contendo:
+
+Descrição do objetivo do projeto e das interações com outros projetos.
+Descrição dos módulos (VHDL, C, interação com o sistema operacional, se houver)
+Detalhes de implementação.
+README.TXT deve conter as informações necessárias sobre os arquivos.
+Em resumo, devo ser capaz de baixar o material e ter uma visão geral do projeto de cada equipe.  
+Se for muito grande, incluir no README.TXT o link para o local de armazenamento.
+
+
+PROJTO FINAL: Sistema de Radar e Painel de Mnesagens Variavies(PMV)
+
+ESTADO ATUAL DO PROJETO:
+
+Atualmente o projeto encontra-se na fase de especificação da arquitetura e design do projeto
+
+
+Descrição do Objetivo:
+
+O objetivo do projeto é implementar um sisema embarcado em um FPGA capaz de  simular operações de um Radar de transito de Mensagens Variavies.
+Esse projeto tem inspiração propria e não é baseado em nenhum dos projetos antigos, podendo servir como base para outras turmas futuras.
+
+
+Como Funciona?
+
+Um operador no computador host utiliza uma página web (HTML + JavaScrpit) para atuar no Centro de Controle de Tráfego para enviar dados de veículos
+em um arquivo csv padronizado, contendo placa, velocidad e data/hora via requisições HTTP operando e se comunicando com a placa FPGA.
+
+Na placa, a Nios 2 recebe essas requisições, repessa os dados ao periférico (User.HW) feito em VHHL via o barramento da Avalon-MM para a classificação em hardware,
+que exibe o alerta no Display LCD e nos LEDS da Ciclone 10 e devolve o diagnóstico processado na resposta HTTP para exibição e geração de um outro relatório com as autuações.
+
+
+Modulos do projeto
+
+
+
+- Modulo Do Host (Centro de Controle de Tráfego): Esse módulo consiste em uma página web local(.html) que vai executar diretamente no navegador do usuário, conectado na mesma rede DCHP da DE2
+
+Suas funcionalidades incluem:
++Colocar um IP obtido pela placa via DHCP e configurar os parâmetros da via:
+ -Esses parâmetros incluem limite de velocidade e final da placa para controle de rotatividade
++Leitura local de um arquivo de lote(.csv) utilizando a API File do navegador e envio sequencial assíncrono ára o servidor HTTTP no Nios
++Envio unitário manual de veículos para teste
++Exibição das autuações em tempo real retornadas pela FPGA  e geração de um relatório de saída em .csv
+
+Exemplo de arquivo de lote:
+
+placa;velocidade;data_hora
+ABC1D23;54;12/11/2026 07:45:10
+XYZ9K88;68;12/11/2026 08:12:33
+BRA2E19;92;12/11/2026 14:20:05
+QWE4R59;58;12/11/2026 18:05:40
+JKL7M01;110;12/11/2026 23:50:12
+
+
+Modulo do Software Embarcado
+
+O firmware é executado sobre o RTOS MicroC/OS-II integrado a pilha do InterNiche NicheStack TCP/IP 3.1
+
+Seu sistema incluem sub módulos
+
+Inicialização da rede e DCHP: 
+
+um arquivo .c do prorío simple socket nios inicia o driver que cuida da obtenção do endereço IP vai DCHP(o padrão do projeto simple socket)
+
+
+Thread de Recepção: 
+
+Fica escutando conexões TCP na porta HTTP configurada, realiza o parsing do conteúdo e dos parâmetros enviado pela página web:
+	-Placa
+	-Velocidade
+	-Data/Hora
+	-Limite de velocidade
+	-Caractere de rodízio
+	+Encaminha para o processamento an fila do MicroC/OS-2
+
+	
+
+Thread de Processamento, Hardware e Transmissão HTTP:
+
+Esse thread vai consumir dados da Fila do MicroC/OS-II
+
+Realizar o empacotamento dos dados de escrita nos registradores de controle do UserHW
+
+Ler os registrados de diagnóstico
+
+Atualizar o DisplayLCD e enviar a resposta HTTP 
+
+	
+
+
+
+
+

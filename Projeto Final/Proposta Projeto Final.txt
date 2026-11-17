@@ -1,0 +1,31 @@
+O projeto consiste em implementar um hardware embarcado aliado ao um painel de mensagens variada (LCD da placa) que integra um radar de velocidade e fiscalização eletrônica. Um servidor no computador do host serve como Centro de Controle de Tráfego, realiza a leitura de um arquivo teste em lote(tráfego.csv) contendo registros de passagem de veículos(placa, velocidade e data/hota) e transmitindo os à placa FPGA por meio de Sockets TCP/IP
+
+Na placa, processador NIOS recebe os pacotes pela rede, repassa os dados ao periférico de hardware customizado em VHDL para processar e auditar os dados, exibe as informações e alertas em um display LCD 16x2 e devolve os dados processados de volta ao servidor no PC
+
+Características do Projeto:
+
++Comunicação TCP/IP do servidor no PC com a placa
++Interface com o display LCD para exibir informações como placa do veículo, velocidade medida, horário e status de fiscalização, além dos leds da placa para sinalização luminosa.
++Hardware do usuário que vai implementar as seguintes características:
+
+1. Comparar a velocidade média com o limite configurado pelo servidor
+2. Classificar a ocorrência em três níveis(normal,médio,grave)
+3. Verificar se o veículo possui restrição/alerta de placa monitarada(comparando com um dígito da placa)
+4.Identificar se a passagem ocorreu em horário de prico a partir da data/hora
+5. Contabilizar automaticamente o total de veículos e o total de infrações sempre que um nova velocidade é escrita
+6.Armazenar internamente a placa e o horário da última infração registrada. 
+
+Mapa de registrador:
+
+ESCRITA
+1-Velocidade média do veículo
+2-limite de velocidade da via, caractere monitorado do alerta de restrição
+3-Primeiros 4 caracteres da placa Mercosul
+4-Últimos 3 caracteres
+5-data/hora
+
+LEITURA
+1-Classificação de multa
+2-Total acumulado de infrações
+3-Quatros primeiros caracteres da placa infratora
+4-Carimbo de tempo da última infração registrada. 
