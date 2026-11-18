@@ -4,7 +4,7 @@
  * Machine generated for CPU 'cpu_0' in SOPC Builder design 'system_0'
  * SOPC Builder design path: C:/altera/Projetos/LogicaReconfiguravel/Nios_Ethernet/DE2_NET/system_0.sopcinfo
  *
- * Generated: Thu Jul 05 22:54:04 BRT 2018
+ * Generated: Tue Nov 17 22:14:54 BRST 2026
  */
 
 /*
@@ -55,14 +55,14 @@ MEMORY
     reset : ORIGIN = 0x1400000, LENGTH = 32
     cfi_flash_0 : ORIGIN = 0x1400020, LENGTH = 4194272
     sram_0 : ORIGIN = 0x1a00000, LENGTH = 524288
-    epcs_controller : ORIGIN = 0x1a81800, LENGTH = 2048
+    epcs_controller : ORIGIN = 0x1a81000, LENGTH = 2048
 }
 
 /* Define symbols for each memory base-address */
 __alt_mem_sdram_0 = 0x800000;
 __alt_mem_cfi_flash_0 = 0x1400000;
 __alt_mem_sram_0 = 0x1a00000;
-__alt_mem_epcs_controller = 0x1a81800;
+__alt_mem_epcs_controller = 0x1a81000;
 
 OUTPUT_FORMAT( "elf32-littlenios2",
                "elf32-littlenios2",

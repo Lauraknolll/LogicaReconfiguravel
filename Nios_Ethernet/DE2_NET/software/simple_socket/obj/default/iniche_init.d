@@ -1,6 +1,6 @@
 obj/default/iniche_init.o: iniche_init.c \
   ../simple_socket_bsp//HAL/inc/io.h \
-  ../simple_socket_bsp//HAL/inc/alt_types.h \
+  ../simple_socket_bsp//HAL/inc/alt_types.h picohttpparser.h \
   ../simple_socket_bsp/HAL/inc/includes.h \
   ../simple_socket_bsp/HAL/inc/os_cpu.h \
   ../simple_socket_bsp/HAL/inc/sys/alt_irq.h \
@@ -65,6 +65,8 @@ obj/default/iniche_init.o: iniche_init.c \
 ../simple_socket_bsp//HAL/inc/io.h:
 
 ../simple_socket_bsp//HAL/inc/alt_types.h:
+
+picohttpparser.h:
 
 ../simple_socket_bsp/HAL/inc/includes.h:
 

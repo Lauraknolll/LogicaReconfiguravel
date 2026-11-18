@@ -151,6 +151,7 @@ C_SRCS += tse_my_system.c
 C_SRCS += SSS_DE2_115.c
 C_SRCS += dm9000a.c
 C_SRCS += LCD.c
+C_SRCS += picohttpparser.c
 CXX_SRCS :=
 ASM_SRCS :=
 

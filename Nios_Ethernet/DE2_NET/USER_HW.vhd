@@ -17,8 +17,6 @@ architecture a_USER_HW of USER_HW is
 	
 	begin
 		
-		dado_escrita0 <= DADO_ESCRITA;
-		
 		main_proc: process(CLK, RST)
 
 		begin
@@ -27,13 +25,16 @@ architecture a_USER_HW of USER_HW is
 			
 			elsif rising_edge(CLK) then
 				
-				if CS = '1' AND LER = '1' then
-						dado_leitura0 <= std_logic_vector(unsigned(dado_escrita0) + 1);
+				if CS = '1' AND ESCREVER = '1' then
+					if DADO_ESCRITA(7 downto 0) = x"F7" then
+						dado_leitura0 <= (others => '0'); 
+					else
+						dado_leitura0 <= std_logic_vector(unsigned(DADO_ESCRITA) + 1);
+					end if;
 				end if;
-	
 			end if;
 		end process;
 		
-		DADO_LEITURA <= dado_leitura0;
+		DADO_LEITURA <= dado_leitura0 when (CS = '1' and LER = '1') else (others => '0');
 
 end architecture a_USER_HW;

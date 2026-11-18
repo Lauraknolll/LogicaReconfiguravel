@@ -3,7 +3,7 @@
 # Machine generated for CPU 'cpu_0' in SOPC Builder design 'system_0'
 # SOPC Builder design path: C:/altera/Projetos/LogicaReconfiguravel/Nios_Ethernet/DE2_NET/system_0.sopcinfo
 #
-# Generated: Thu Jul 05 22:54:04 BRT 2018
+# Generated: Tue Nov 17 22:14:54 BRST 2026
 
 # DO NOT MODIFY THIS FILE
 #
@@ -56,4 +56,4 @@ memory 0x1400000 0x1800000 cache
 memory 0x1a00000 0x1a80000 cache
 
 # epcs_controller
-memory 0x1a81800 0x1a82000 cache
+memory 0x1a81000 0x1a81800 cache

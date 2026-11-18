@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <io.h>
 #include <fcntl.h>
+#include "picohttpparser.h"
 /* MicroC/OS-II definitions */
 #include "../simple_socket_bsp/HAL/inc/includes.h"
 
@@ -67,6 +68,157 @@ struct inet_taskinfo ssstask = {
       4,
       APP_STACK_SIZE,
 };
+
+#define HTTP_PORT        80
+#define HTTP_MAX_MSG_LEN 100 //limite de caracteres especificado no arquivo
+#define HTTP_RX_BUF_SIZE 2048 //  Tamano do buffer para caber o cabeçario http + o corpo
+
+
+/*Estrutura para compartilhar mensagens HTTP entre os dois*/
+
+typedef struct
+{
+	int sock; //ID do socket que vai ficar conectado ao navegador
+	char texto[HTTP_MAX_MSG_LEN + 1]; //String que vai ser extraida do corpo HTTP(considerando o \0)
+	int len; //tamanho da mensagem
+}HttpMsg;
+
+
+OS_EVENT *HttpReqQ; //ponteiro para a fila de mensagem do Micro/OS
+void *HttpReqQTbl[4]; // Vetor de inteira da fila(para guardar 4 mensagens)
+OS_EVENT *HttpSlotSem; //Envio que serv para garantir que o RX não sobrescreve antes do TX respoder
+
+
+
+static HttpMsg req_atual; //Estático, a mensa mensagem na thread
+
+
+//Macros obrigatórias do NicheStack para declarar uma thread que usa a rede
+TK_OBJECT(to_rxtask); //Objeto de controle da tarefa na NicheStack
+TK_ENTRY(HttpRxTask); //Declaração do protótipo: int HttpRxTask(int parm)
+
+
+
+
+/*THREAD do RX*/
+struct inet_taskinfo rxtask = 
+{
+&to_rxtask, //Endereço de objeto
+"http rx task", //nome da thread
+HttpRxTask, //Função que ela vai executar
+8, // Prioridade (8 porque as outras estão sendo usadas no sistema)
+APP_STACK_SIZE, //Tamanho da pilha da thread
+NULL //Poteiro base da pilha
+}
+
+
+
+
+int HttpRxTask (int parm)
+{
+	int sock_escuta
+	int cli_sock;
+	int cli_len;
+	struct sockaddr_in servidor_addr;
+	struck sockaddr_in cli_addr;
+	INT8U erro; // para guardar código de erro das funções do MicroC/OS
+
+
+	//Buffer estático onde o recv() vai jogar os bytes vindo da placa
+	static char rx_buf[HTTP_RX_BUF_SIZE];
+
+	//Variáveis exigida pelo picohttpparsec
+	struct phr_header headers[16]; //guarda cabeçarios
+	const char *method; //Aponta para o comando (post, get)
+	const char *path // aponta para a url no buffer
+	size_t method_len,path_len; // tamanho de bytes do método e da URL
+	size_t num_headers; // Entra no máximo(16) e sai quantos vieres
+	int http_ver; // versão do HTTP
+
+
+	int total; //total de buutes acumulados no rx buff
+	int prev_len; //qtd de bytes antes da última leitura
+	int pret; //retorno do picohttpparser
+	int r; //quantidade de bytes lidos em uma chamada
+	int content_len; //Tamano do corpo lido do header
+	size_t i;
+
+
+
+	//CRIAÇÃO DO SOCKET TCP
+	fd = socket(AF_INET,SOCK-STREAM,0); //cria socket TCP IPv4
+	if(fd_lsiten <0)
+	{
+		printf("[RX] Erro ao criar socket\n")
+		TK_RETURN_ERROR();
+	}
+
+	//Configurando a porta 80 para eschuta
+	memset(&servidor_addr,0,sizeof(servidor_addr));
+	servidor_addr.sin_family = AF_INET;
+	servidor_addr.sin_port = htons(HTTP_PORT);
+	servidor_addr.sin_addr.sin_addr = INADDR_ANY;
+
+	//fazendo o bind do socket na porta 80 da placa
+	if(bind(fd_listen,(struct sockaddr *)&server_addr,sizeof(server_addr)) < 0)
+	{
+		TK_RETURN_ERROR();
+	}
+
+	//Colocando o socket em modo de escuta
+	if(listen(fd_listen,4) < 0)
+	{
+		TK_RETURN_ERROR();
+	}
+
+
+	printf("RX Servidor HTTP escutando em: %d",HTTP_PORT);
+
+	//Loop infito da thread para receber uma requisição
+	while(1)
+	{
+		cli_len = sizeof(cli_addr);
+
+
+
+		//o accept bloqueia a cpu(faz ela dormir) até o PC se comunicar com ele
+		cli_sock = accept(fd_listen, (struct sockaddr *)&cli_addr, &cli_len);
+
+		if(cli_sock < 0)
+		{
+			TK_SLEEP(1);
+			continue;
+		}
+
+
+		//Contadores pra ler a requisição HTTP
+		total = 0;
+		prev_len = 0;
+		pret = -1;
+
+		//Loop de leitura do cabeçalho HTTP
+		while(1)
+		{
+			//Lê bytes enviados pelo navegador e acumula em rx_buf + total
+			r = recv(cli_sock,rx_buf + total, sizeof(rx_buf) - total - 1,0);
+			if(r<=0)
+			{
+				pret = -1;
+				break;
+			}
+
+			pret
+		}
+
+	}
+
+
+
+
+
+}
+
+
 
 /* SSSInitialTask will initialize the NicheStack
  * TCP/IP Stack and then initialize the rest of the Simple Socket Server example 
