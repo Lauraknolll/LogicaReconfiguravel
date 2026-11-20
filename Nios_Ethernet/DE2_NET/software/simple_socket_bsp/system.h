@@ -4,7 +4,7 @@
  * Machine generated for CPU 'cpu_0' in SOPC Builder design 'system_0'
  * SOPC Builder design path: C:/altera/Projetos/LogicaReconfiguravel/Nios_Ethernet/DE2_NET/system_0.sopcinfo
  *
- * Generated: Tue Nov 17 22:14:54 BRST 2026
+ * Generated: Wed Nov 18 22:16:35 BRST 2026
  */
 
 /*
@@ -619,7 +619,7 @@
 #define SYSID_QSYS_0_IRQ_INTERRUPT_CONTROLLER_ID -1
 #define SYSID_QSYS_0_NAME "/dev/sysid_qsys_0"
 #define SYSID_QSYS_0_SPAN 8
-#define SYSID_QSYS_0_TIMESTAMP 1794960673
+#define SYSID_QSYS_0_TIMESTAMP 1795046467
 #define SYSID_QSYS_0_TYPE "altera_avalon_sysid_qsys"
 
 

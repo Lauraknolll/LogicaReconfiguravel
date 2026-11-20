@@ -69,154 +69,327 @@ struct inet_taskinfo ssstask = {
       APP_STACK_SIZE,
 };
 
-#define HTTP_PORT        80
-#define HTTP_MAX_MSG_LEN 100 //limite de caracteres especificado no arquivo
-#define HTTP_RX_BUF_SIZE 2048 //  Tamano do buffer para caber o cabeçario http + o corpo
 
+//DESCRIÇÃO DAS UNIDADES
 
-/*Estrutura para compartilhar mensagens HTTP entre os dois*/
+#define HTTP_PORT        80    /* Porta padrão do protocolo HTTP (http://IP/) */
+#define HTTP_MAX_MSG_LEN 100   /* Limite máximo de 100 caracteres pedido no espec.txt */
+#define HTTP_RX_BUF_SIZE 2048  /* Tamanho do buffer para caber cabeçalho HTTP + body */
+#define HTTP_TX_BUF_SIZE 512   /* Tamanho do buffer para montar a resposta HTTP */
 
-typedef struct
-{
-	int sock; //ID do socket que vai ficar conectado ao navegador
-	char texto[HTTP_MAX_MSG_LEN + 1]; //String que vai ser extraida do corpo HTTP(considerando o \0)
-	int len; //tamanho da mensagem
-}HttpMsg;
+/* Estrutura que empacota os dados que a Thread RX vai enviar para a Thread TX */
+typedef struct {
+    int  sock;                         /* ID do socket conectado com o navegador (para a TX responder nele) */
+    char texto[HTTP_MAX_MSG_LEN + 1];  /* String extraída do body HTTP (+1 para o '\0' final) */
+    int  len;                          /* Quantidade de caracteres da mensagem */
+} HttpMsg;
 
+/* Recursos do sistema operacional MicroC/OS-II para comunicação entre as 2 threads */
+OS_EVENT *HttpReqQ;            /* Ponteiro para a Fila de Mensagens (Queue) do MicroC/OS-II */
+void     *HttpReqQTbl[4];      /* Vetor interno da fila (guarda até 4 ponteiros de mensagens) */
+OS_EVENT *HttpSlotSem;         /* Semáforo binário: evita que a RX sobrescreva 'req_atual' antes da TX terminar */
 
-OS_EVENT *HttpReqQ; //ponteiro para a fila de mensagem do Micro/OS
-void *HttpReqQTbl[4]; // Vetor de inteira da fila(para guardar 4 mensagens)
-OS_EVENT *HttpSlotSem; //Envio que serv para garantir que o RX não sobrescreve antes do TX respoder
+/* Variável estática (global): NUNCA coloque na stack local da função, pois a outra thread vai ler este endereço! */
+static HttpMsg req_atual;
 
+/* Macros obrigatórias da NicheStack para declarar uma thread que usa rede (sockets) */
+TK_OBJECT(to_rxtask);          /* Cria o objeto interno de controle da task na NicheStack */
+TK_ENTRY(HttpRxTask);          /* Declara o protótipo: int HttpRxTask(int parm) */
 
+/* Estrutura de configuração da Thread RX passada para o TK_NEWTASK */
+struct inet_taskinfo rxtask = {
+    &to_rxtask,                /* Endereço do objeto da task */
+    "http rx task",            /* Nome da thread (aparece no console quando é criada) */
+    HttpRxTask,                /* Função que a thread vai executar */
+    8,                         /* Prioridade no MicroC/OS-II (única! 1, 2, 3 e 5 já são usadas pelo sistema) */
+    APP_STACK_SIZE,            /* Tamanho da pilha da thread (~14 KB definidos no ipport.h) */
+    NULL                       /* Ponteiro base da pilha (preenchido automaticamente pelo TK_NEWTASK) */
+};
 
-static HttpMsg req_atual; //Estático, a mensa mensagem na thread
+ // THREAD DE RECEPÇÃO HTTP (Task RX)
 
+void HttpRxTask(void *parm) {
+    int fd_listen;                 /* Socket "ouvinte" (servidor) que fica esperando conexões na porta 80 */
+    int cli_sock;                  /* Socket específico do cliente que acabou de conectar */
+    int cli_len;                   /* Tamanho da struct de endereço do cliente */
+    struct sockaddr_in srv_addr;   /* Endereço/porta onde o servidor vai escutar */
+    struct sockaddr_in cli_addr;   /* Endereço IP/porta de quem conectou (navegador do PC) */
+    INT8U err;                     /* Guarda código de erro das funções do MicroC/OS-II */
 
-//Macros obrigatórias do NicheStack para declarar uma thread que usa a rede
-TK_OBJECT(to_rxtask); //Objeto de controle da tarefa na NicheStack
-TK_ENTRY(HttpRxTask); //Declaração do protótipo: int HttpRxTask(int parm)
+    /* Buffer estático onde o recv() joga os bytes crus vindos da placa de rede */
+    static char rx_buf[HTTP_RX_BUF_SIZE];
+    char cl_str[16];               /* Buffer auxiliar seguro para extrair o valor de Content-Length */
 
+    /* Variáveis exigidas pelo picohttpparser para devolver os pedaços do cabeçalho HTTP */
+    struct phr_header headers[32]; /* Guarda até 16 cabeçalhos (ex: Host, Content-Length, etc.) */
+    const char *method;            /* Apontará para o método no buffer (ex: "POST" ou "GET") */
+    const char *path;              /* Apontará para a URL no buffer (ex: "/") */
+    size_t method_len, path_len;   /* Tamanho em bytes do método e da URL */
+    size_t num_headers;            /* Entra com o máximo (16) e sai com quantos headers vieram */
+    int minor_version;             /* Versão do HTTP (1 para HTTP/1.1) */
 
+    int total;                     /* Total de bytes acumulados no rx_buf até agora */
+    int prev_len;                  /* Quantos bytes tínhamos antes da última leitura recv() */
+    int pret;                      /* Retorno do picohttpparser (>0: tamanho do header, -2: incompleto, -1: erro) */
+    int r;                         /* Quantidade de bytes lidos em uma chamada recv() */
+    int content_len;               /* Tamanho do corpo (body) lido do header Content-Length */
+    size_t copy_len;
+    size_t i;
 
+    //Criando um socket IPv4
+    fd_listen = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd_listen < 0) {
+        printf("[RX] Erro ao criar socket\n");
+        TK_RETURN_ERROR();
+    }
 
-/*THREAD do RX*/
-struct inet_taskinfo rxtask = 
-{
-&to_rxtask, //Endereço de objeto
-"http rx task", //nome da thread
-HttpRxTask, //Função que ela vai executar
-8, // Prioridade (8 porque as outras estão sendo usadas no sistema)
-APP_STACK_SIZE, //Tamanho da pilha da thread
-NULL //Poteiro base da pilha
+    //Configuração da porta IP
+    memset(&srv_addr, 0, sizeof(srv_addr));
+    srv_addr.sin_family = AF_INET;
+    srv_addr.sin_port = htons(HTTP_PORT);
+    srv_addr.sin_addr.s_addr = INADDR_ANY;
+
+    //Bind com a porta 80
+    if (bind(fd_listen, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0) {
+        printf("[RX] Erro no bind\n");
+        close(fd_listen);
+        TK_RETURN_ERROR();
+    }
+
+    //Coloca no modo fila para receber as conexões
+    if (listen(fd_listen, 4) < 0) {
+        printf("[RX] Erro no listen\n");
+        close(fd_listen);
+        TK_RETURN_ERROR();
+    }
+
+    printf("[RX] Servidor HTTP escutando na porta %d\n", HTTP_PORT);
+
+    //Loop de recepção dos pacotes
+    while (1) {
+        cli_len = sizeof(cli_addr);
+
+		//o accept bloqueia a thread até chegar um pacote
+        cli_sock = accept(fd_listen, (struct sockaddr *)&cli_addr, &cli_len);
+        if (cli_sock < 0) {
+            TK_SLEEP(1);
+            continue;
+        }
+
+        //Zera as váriáveis do picohttpparser para ler o cabeçario http
+        total = 0;
+        prev_len = 0;
+        pret = -1;
+
+        /* Loop de leitura do cabeçalho HTTP */
+        while (1) {
+            //Lê os bytes que a rede vai enviado, que pode ser separado
+            r = recv(cli_sock, rx_buf + total, sizeof(rx_buf) - total - 1, 0); 
+            if (r <= 0) {
+                pret = -1; /* Conexão fechou ou deu erro */
+                break;
+            }
+            prev_len = total; //guarda a última parte de bytes recebido
+            total += r; //guarda o total de bytes recebido
+            rx_buf[total] = '\0'; //como medida de segurança, colo fim da string no final da leitura
+
+            //manda os bytes bruto para o picoparser ler a requisição
+            num_headers = 32; //número que serve para saber quantos headers tera o pacote HTTP
+            pret = phr_parse_request(rx_buf, (size_t)total,
+                                     &method, &method_len,
+                                     &path, &path_len,
+                                     &minor_version,
+                                     headers, &num_headers, (size_t)prev_len);
+
+            if (pret > 0) break;   //Cabeçario terminou
+            if (pret == -1) break; //Erro de formato HTTP
+            if (total >= (int)sizeof(rx_buf) - 1) {
+                pret = -1;         //buffer estotou sem terminar o cabeçario
+                break;
+            }
+          //Continua o loop para pegar todos os bytes do HTTP
+        }
+
+        //Faz um double check e confere se o picoparser deu certo e se o que o http enviou foi POST
+        if (pret > 0 && method_len == 4 && memcmp(method, "POST", 4) == 0) {
+
+            //Procura no cabeçario do Content-Lenght o texto certo
+            content_len = 0;
+            for (i = 0; i < num_headers; i++) {
+				//Loop para ver se primeiro tem 14 bytes, segundo para compara os nomes e ver se são iguais(14 bytes)
+                if (headers[i].name_len == 14 && strncasecmp(headers[i].name, "Content-Length", 14) == 0) {
+                    
+                    //garante que eu copie os símboltos certos e termine em 0/
+                    copy_len = headers[i].value_len < (sizeof(cl_str) - 1) //<15 
+                               ? headers[i].value_len //tamanho certo
+                               : (sizeof(cl_str) - 1); //tamanho padrão
+                    memcpy(cl_str, headers[i].value, copy_len); //compia o que tem dentro do header para fazer a string
+                    cl_str[copy_len] = '\0'; // adiciona o terminador final
+                    content_len = atoi(cl_str); // copia para a memória como int
+                    break;
+                }
+            }
+
+            //proteção de dados
+            if (content_len < 0) {
+                content_len = 0;
+            } else if (content_len > HTTP_MAX_MSG_LEN) {
+                content_len = HTTP_MAX_MSG_LEN;
+            }
+			
+
+			//loop de proteção para garantir todos os dados, já que o BODY pode ter ficado em outro apcote
+            while ((total - pret) < content_len) {
+                r = recv(cli_sock, rx_buf + total, sizeof(rx_buf) - total - 1, 0);
+                if (r <= 0) break;
+                total += r;
+            }
+
+            //ajusta a conta para caso ocorra uma queda de conexão
+            if ((total - pret) < content_len) {
+                content_len = total - pret;
+            }
+
+            //Espera o semáforo ficar pronto
+            OSSemPend(HttpSlotSem, 0, &err);
+
+            //Preenche toda a estrutura que será lida pela thread do TX
+            req_atual.sock = cli_sock;
+            req_atual.len  = content_len;
+            /* Como 'pret' é o tamanho exato do cabeçalho, 'rx_buf + pret' aponta direto para o 1º byte do body! */
+            memcpy(req_atual.texto, rx_buf + pret, content_len);
+            req_atual.texto[content_len] = '\0';
+
+            printf("[RX] Mensagem recebida (%d chars): %s\n", req_atual.len, req_atual.texto);
+
+            //envia a requisição atual para a ThreadRX
+            OSQPost(HttpReqQ, (void *)&req_atual);
+
+        } else {
+            close(cli_sock);
+        }
+    }
+
+    TK_RETURN_OK();
 }
 
 
+//Definição da thread de recepção
 
 
-int HttpRxTask (int parm)
-{
-	int sock_escuta
-	int cli_sock;
-	int cli_len;
-	struct sockaddr_in servidor_addr;
-	struck sockaddr_in cli_addr;
-	INT8U erro; // para guardar código de erro das funções do MicroC/OS
+/* Macros obrigatórias da NicheStack para declarar a Thread TX */
+TK_OBJECT(to_txtask);          /* Objeto interno de controle da task TX */
+TK_ENTRY(HttpTxTask);          /* Protótipo: int HttpTxTask(int parm) */
+
+/* Estrutura de configuração da Thread TX passada para o TK_NEWTASK */
+struct inet_taskinfo txtask = {
+    &to_txtask,                /* Endereço do objeto da task */
+    "http tx task",            /* Nome da thread */
+    HttpTxTask,                /* Função que a thread vai executar */
+    9,                         /* Prioridade única no MicroC/OS-II (diferente da RX que é 8!) */
+    APP_STACK_SIZE,            /* Tamanho da pilha da thread */
+    NULL                       /* Ponteiro base da pilha */
+};
+
+#include "io.h"       /* Necessário para IORD e IOWR no Nios II */
+#include "system.h"   /* Onde fica definido o USER_HW_BASE gerado pelo Qsys */
+
+/* Exemplo de offsets dos registradores do seu user_hw (ajuste conforme seu Verilog/VHDL) */
+#define ESCREVER  0   
+#define LER   1   
+#define DADO_ESCRITA  2   /* Entrada de dados para o hardware */
+#define DADO_LEITURA 3   /* Saída processada pelo hardware */
+
+//ThreaRX
+
+void HttpTxTask(void *parm) {
+    INT8U err;                         /* Código de erro retornado pelo MicroC/OS-II */
+    HttpMsg *msg;                      /* Ponteiro que receberá o endereço de 'req_atual' */
+    static char tx_buf[HTTP_TX_BUF_SIZE]; /* Buffer para montar o cabeçalho + corpo da resposta */
+    char body_buf[160];                /* Buffer auxiliar para montar o texto do corpo da resposta */
+    int body_len;                      /* Tamanho do corpo em bytes */
+    int total_len;                     /* Tamanho total (cabeçalho + corpo) a enviar */
+    int sent;                          /* Quantos bytes já foram enviados pelo send() */
+    int r;                             /* Retorno de cada chamada send() */
+
+    printf("[TX] Thread de resposta HTTP iniciada\n");
+
+    while (1) {
+        //Dorme até receber uma mensagem
+        msg = (HttpMsg *)OSQPend(HttpReqQ, 0, &err);
+
+        //Verifica se a leitura da fila deu certo
+        if (err != OS_NO_ERR || msg == NULL) {
+            continue;
+        }
+
+        printf("[TX] Processando resposta para mensagem: \"%s\"\n", msg->texto);
+
+        
+		//interação com o user hardware
+        char hw_resposta[HTTP_MAX_MSG_LEN + 1];
+        int j;
+
+        printf("[TX] Enviando \"%s\" para o user_hw...\n", msg->texto);
+
+        //Loop para enviar os dados para o user hardware
+        for (j = 0; j < msg->len; j++) {
+           //Escreve no caractere
+        	IOWR(USER_HW_0_BASE, 0, (alt_u32)(unsigned char)msg->texto[j]); //conversão para a comparação funcionar em hardware
+
+          
+			//le os resultados
+            hw_resposta[j] = (char)IORD(USER_HW_0_BASE, 0);
+        }
+        hw_resposta[msg->len] = '\0'; //Fecha a string
+
+        printf("[TX] Resposta do user_hw: \"%s\"\n", hw_resposta);
+
+        //preparação para a resposta
+        body_len = snprintf(body_buf, sizeof(body_buf), "%s", hw_resposta);
+
+        if (body_len < 0) body_len = 0;
+        if (body_len >= (int)sizeof(body_buf)) body_len = sizeof(body_buf) - 1;
+
+        //monta o cabeçario htpp da resposta
+        total_len = snprintf(tx_buf, sizeof(tx_buf),
+                             "HTTP/1.1 200 OK\r\n"
+                             "Content-Type: text/plain; charset=utf-8\r\n"
+                             "Access-Control-Allow-Origin: *\r\n"
+                             "Content-Length: %d\r\n"
+                             "Connection: close\r\n"
+                             "\r\n"
+                             "%s",
+                             body_len, body_buf);
 
 
-	//Buffer estático onde o recv() vai jogar os bytes vindo da placa
-	static char rx_buf[HTTP_RX_BUF_SIZE];
+        if (total_len < 0) total_len = 0;
+        if (total_len >= (int)sizeof(tx_buf)) total_len = sizeof(tx_buf) - 1;
 
-	//Variáveis exigida pelo picohttpparsec
-	struct phr_header headers[16]; //guarda cabeçarios
-	const char *method; //Aponta para o comando (post, get)
-	const char *path // aponta para a url no buffer
-	size_t method_len,path_len; // tamanho de bytes do método e da URL
-	size_t num_headers; // Entra no máximo(16) e sai quantos vieres
-	int http_ver; // versão do HTTP
+       //envia para o cliente(pc)
+        sent = 0;
+        while (sent < total_len) {
+            r = send(msg->sock, tx_buf + sent, total_len - sent, 0);
+            if (r <= 0) {
+                printf("[TX] Erro ao enviar resposta HTTP\n");
+                break;
+            }
+            sent += r;
+        }
 
+        //Fecha a conexão http
+        close(msg->sock);
 
-	int total; //total de buutes acumulados no rx buff
-	int prev_len; //qtd de bytes antes da última leitura
-	int pret; //retorno do picohttpparser
-	int r; //quantidade de bytes lidos em uma chamada
-	int content_len; //Tamano do corpo lido do header
-	size_t i;
+        printf("[TX] Resposta enviada (%d bytes) e socket fechado.\n", sent);
 
+        //libera o semáforo
+        OSSemPost(HttpSlotSem);
+    }
 
-
-	//CRIAÇÃO DO SOCKET TCP
-	fd = socket(AF_INET,SOCK-STREAM,0); //cria socket TCP IPv4
-	if(fd_lsiten <0)
-	{
-		printf("[RX] Erro ao criar socket\n")
-		TK_RETURN_ERROR();
-	}
-
-	//Configurando a porta 80 para eschuta
-	memset(&servidor_addr,0,sizeof(servidor_addr));
-	servidor_addr.sin_family = AF_INET;
-	servidor_addr.sin_port = htons(HTTP_PORT);
-	servidor_addr.sin_addr.sin_addr = INADDR_ANY;
-
-	//fazendo o bind do socket na porta 80 da placa
-	if(bind(fd_listen,(struct sockaddr *)&server_addr,sizeof(server_addr)) < 0)
-	{
-		TK_RETURN_ERROR();
-	}
-
-	//Colocando o socket em modo de escuta
-	if(listen(fd_listen,4) < 0)
-	{
-		TK_RETURN_ERROR();
-	}
-
-
-	printf("RX Servidor HTTP escutando em: %d",HTTP_PORT);
-
-	//Loop infito da thread para receber uma requisição
-	while(1)
-	{
-		cli_len = sizeof(cli_addr);
-
-
-
-		//o accept bloqueia a cpu(faz ela dormir) até o PC se comunicar com ele
-		cli_sock = accept(fd_listen, (struct sockaddr *)&cli_addr, &cli_len);
-
-		if(cli_sock < 0)
-		{
-			TK_SLEEP(1);
-			continue;
-		}
-
-
-		//Contadores pra ler a requisição HTTP
-		total = 0;
-		prev_len = 0;
-		pret = -1;
-
-		//Loop de leitura do cabeçalho HTTP
-		while(1)
-		{
-			//Lê bytes enviados pelo navegador e acumula em rx_buf + total
-			r = recv(cli_sock,rx_buf + total, sizeof(rx_buf) - total - 1,0);
-			if(r<=0)
-			{
-				pret = -1;
-				break;
-			}
-
-			pret
-		}
-
-	}
-
-
-
-
-
+    TK_RETURN_OK();
 }
+
+
 
 
 
@@ -264,177 +437,24 @@ void SSSInitialTask(void *task_data)
   /*This task is deleted because there is no need for it to run again */
   //error_code = OSTaskDel(OS_PRIO_SELF);
   //alt_uCOSIIErrorHandler(error_code, 0);
-  LCD_Init();
-  int sw, but;
-  char Text[16] = "Requisitando aq";
-  LCD_Show_Text(Text);
-  char Text00[16] = "arquivoA.txt   ";
-  char Text01[16] = "arquivoB.txt   ";
-  char Text10[16] = "arquivoC.txt   ";
-  char Text11[16] = "invalido.txt   ";
-  char ArqI[32] = "ARQ INVALIDO !!!ARQ INVALIDO !!!";
-  char p1[16];
-  char p2[16];
-  char flag = 0; //0-> escolhendo, 1->scroll
-  char lastbut = 0x0F;
-  unsigned int linha1=0;
-  unsigned int linha2=16;
-  char choice = 0;
-  struct sockaddr_in sa;
-  int res;
-  int SocketFD;
-  char reqA[6]= "queroa";
-  char reqB[6]= "querob";
-  char reqC[6]= "queroc";
-  char buf[2000];
-  printf("estou aqui\n");
-  SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-  printf("Socket criado\n");
-  memset(&sa, 0, sizeof sa);
-  sa.sin_family = AF_INET;
-  sa.sin_port = htons(7777); // ALTERAR PORTA A SER UTILIZADA AQUI
-  res = inet_pton(AF_INET, "192.168.137.1", &sa.sin_addr); //ALTERAR O IP DO SERVIDOR AQUI
-  if (connect(SocketFD, (struct sockaddr *)&sa, sizeof sa) == -1) {
-	perror("connect failed");
-	close(SocketFD);
-	exit(EXIT_FAILURE);
-  }
-  while (1){
-	  	/*
-	    if (send(SocketFD, buf, sizeof(buf), 0) < 0) //exemplo de envio
-	    {
-	        perror("Send()");
-	        exit(EXIT_FAILURE);
-	    }else{
-	    	printf("Msg enviada: %s\n", buf);
-	    }
-	    if (recv(SocketFD, buf, sizeof(buf), 0) < 0) //exemplo de recebimento
-	    {
-	        perror("Recv()");
-	        exit(EXIT_FAILURE);
-	    }else{
-	    	printf("Msg recebida: %s\n", buf);
-	    	memcpy(buf, original, 12 * sizeof(char));
-	    }
-	    msleep(1000);*/
-	  	sw = IORD_ALTERA_AVALON_PIO_DATA(SWITCH_PIO_BASE) & 0x03;
-		but = IORD_ALTERA_AVALON_PIO_DATA(BUTTON_PIO_BASE) & 0x0F;
 
-		  	if(flag == 0) // estado de escolha
-		  	{
-		  		if(sw==0){LCD_Line2(); LCD_Show_Text(Text00);}
-		  		if(sw==1){LCD_Line2(); LCD_Show_Text(Text01);}
-		  		if(sw==2){LCD_Line2(); LCD_Show_Text(Text10);}
-		  		if(sw==3){LCD_Line2(); LCD_Show_Text(Text11);}
-		  		if(but == 13 && but != lastbut)
-		  		{
-		  			flag = 1;
-		  			if(sw == 0)
-		  			{
-		  				choice = 1;
-		  			    if (send(SocketFD, reqA, sizeof(reqA), 0) < 0) //exemplo de envio
-		  			    {
-		  			        perror("Send()");
-		  			        exit(EXIT_FAILURE);
-		  			    }else{
-		  			    	printf("Msg enviada: queroa\n");
-		  			    }
-		  			    if (recv(SocketFD, buf, sizeof(buf), 0) < 0) //exemplo de recebimento
-		  			    {
-		  			        perror("Recv()");
-		  			        exit(EXIT_FAILURE);
-		  			    }else{
-		  			    	printf("Msg recebida: %s\n", buf);
-		  			    	memcpy(p1, buf, 16 * sizeof(char));
-		  			    	memcpy(p2, &buf[16], 16 * sizeof(char));
-		  			    }
-		  			}else if(sw == 1)
-		  			{
-		  				choice = 2;
-		  			    if (send(SocketFD, reqB, sizeof(reqB), 0) < 0) //exemplo de envio
-		  			    {
-		  			        perror("Send()");
-		  			        exit(EXIT_FAILURE);
-		  			    }else{
-		  			    	printf("Msg enviada: querob\n");
-		  			    }
-		  			    if (recv(SocketFD, buf, sizeof(buf), 0) < 0) //exemplo de recebimento
-		  			    {
-		  			        perror("Recv()");
-		  			        exit(EXIT_FAILURE);
-		  			    }else{
-		  			    	printf("Msg recebida: %s\n", buf);
-		  			    	memcpy(p1, buf, 16 * sizeof(char));
-		  			    	memcpy(p2, &buf[16], 16 * sizeof(char));
-		  			    }
-		  			}else if(sw == 2)
-		  			{
-		  				//TransmitPacket(arq3,0x06);
-		  				choice = 3;
-		  			    if (send(SocketFD, reqC, sizeof(reqC), 0) < 0) //exemplo de envio
-		  			    {
-		  			        perror("Send()");
-		  			        exit(EXIT_FAILURE);
-		  			    }else{
-		  			    	printf("Msg enviada: queroc\n");
-		  			    }
-		  			    if (recv(SocketFD, buf, sizeof(buf), 0) < 0) //exemplo de recebimento
-		  			    {
-		  			        perror("Recv()");
-		  			        exit(EXIT_FAILURE);
-		  			    }else{
-		  			    	printf("Msg recebida: %s\n", buf);
-		  			    	memcpy(p1, buf, 16 * sizeof(char));
-		  			    	memcpy(p2, &buf[16], 16 * sizeof(char));
-		  			    }
-		  			}else if(sw == 3)
-		  			{
-		  				//TransmitPacket(arq4,0x06);
-		  				choice = 4;
-		  				memcpy(p1, ArqI, 16 * sizeof(char));
-		  				memcpy(p2, &ArqI[16], 16 * sizeof(char));
-		  			}
-		  		}
-		  	}else if(flag == 1) // scroll
-		  	{
-		  		LCD_Line1();
-		  		LCD_Show_Text(p1);
-		  		LCD_Line2();
-		  		LCD_Show_Text(p2);
-		  		// if dos botoes
-		  		if(but == 11 && but != lastbut)
-		  		{
-		  			if(linha2<1984){
-		  				linha1+=16;
-		  				linha2+=16;
 
-		  			}
-		  		}else if(but == 7 && but != lastbut)
-		  		{
-		  			if(linha1>=16){
-		  				linha1-=16;
-		  				linha2-=16;
-		  			}
-		  		}else if(but==13 && but!=lastbut)
-		  		{
-		  			flag = 0;
-		  			linha1 = 0;
-		  			linha2 = 16;
-		  			LCD_Clear();
-		  			LCD_Show_Text(Text);
-		  		}
+  //Trecho para iniciar o servidor
+    printf("\nSimple Socket Server starting up\n");
 
-		  		if (choice != 4){
-		  			memcpy(p1, &buf[linha1], 16 * sizeof(char));
-			    	memcpy(p2, &buf[linha2], 16 * sizeof(char));
-		  		}
+    //cria a fila de mensagem
+    HttpReqQ = OSQCreate(&HttpReqQTbl[0], 4);
 
-		  	}
+    
+	//cria o semáforo
+    HttpSlotSem = OSSemCreate(1);
 
-		  	lastbut=but;
+    //Cria e inicia ambas as threads
+    TK_NEWTASK(&rxtask);
+    TK_NEWTASK(&txtask);
 
-	    msleep(100);
-  }
+    error_code = OSTaskDel(OS_PRIO_SELF);
+    alt_uCOSIIErrorHandler(error_code, 0);
 }
 
 /* Main creates a single task, SSSInitialTask, and starts task scheduler.
